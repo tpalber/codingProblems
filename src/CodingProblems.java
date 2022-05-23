@@ -1,12 +1,606 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
+import java.util.Stack;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class CodingProblems {
     public static void main(String[] args) {
-        char[][] input = new char[][]{{'X','X','X','X'},{'X','O','O','X'},{'X','X','O','X'},{'X','O','X','X'}};
-        solve(input);
-        System.out.println(input[1][1]);
+        System.out.println(substringWithDistinctChars("abcba", 2));
+    }
+
+    /**
+     * Find the longest substring that contains k distinct chars.
+     * Following the brute force implementation, where we iterate at each start and check for its substring
+     *      Time O(n^3), but we can improve to O(n^2) we use count[Alphabet_Size] to check for distinct chars.
+     *
+     * Optimal solution requires using sliding window algorithm, where we track the start index of the substring and
+     * size of the current max. We keep incrementing the size until the substring is invalid, then we start incrementing
+     * from the start index until we have a valid substring. We continue until end of string.
+     *      Time O(n), if we use count[Alphabet_Size] to check for distinct chars.
+     */
+    public static String substringWithDistinctChars(String s, int k) {
+        String maxSubstring = "";
+        for (int i = 0; i < s.length(); i++) {
+            for (int j = i; j < s.length(); j++) {
+                String tempSubstring = s.substring(i, j+1);
+                if (isDistinctChars(tempSubstring, k)) {
+                    if (tempSubstring.length() > maxSubstring.length()) {
+                        maxSubstring = tempSubstring;
+                    }
+                }
+            }
+        }
+        return maxSubstring;
+    }
+
+    public static boolean isDistinctChars(String s, int k) {
+        Set<Character> charSet = new HashSet<>();
+        for (char c : s.toCharArray()) {
+            charSet.add(c);
+        }
+        return charSet.size() <= k;
+    }
+
+    /**
+     * Count of prime numbers less than the input value. We can create
+     * O(n) We can create a boolean array with size of input value. We will set the values
+     *      to true (T) only when we know that it's not a prime. We can figure out if value at index
+     *      is not prime by doing multiples of the previous prime numbers. We need to make sure to
+     *      start at index 2 since that's the first prime number.
+     *
+     * val = 7; isNotPrime = [F,F,F,F,F,F,F]
+     * At index 2, we loop through isNotPrime array until index * i >= val. For each of the iteration,
+     *      we set the boolean value at the index * i to true (T). [F,F,F,F,T,F,T]
+     * At index 3, we will only need to check 3 * 2 = 6, iterations after are >= val.
+     *      Since index 6 is already set to T, there is no change. [F,F,F,F,T,F,T]
+     * We continue this until we have gone through the entire isNotPrime array,
+     *      but only checking values of F (not prime numbers).
+     *
+     * We can increment the count like it's done below within the for-loop, or run through the loop again
+     *      and count all the Ts within isNotPrime array.
+     */
+    public static int numOfPrimes(int val) {
+        boolean[] isNotPrime = new boolean[val];
+        int count = 0;
+        for (int i = 2; i < val; i++) {
+            if (!isNotPrime[i]) {
+                count++;
+                for (int j = 2; (i*j) < val; j++) {
+                    isNotPrime[i*j] = true;
+                }
+            }
+        }
+        return count;
+    }
+
+    public static boolean isPrime(int val) {
+        int i = 2;
+        while (i < val/2) {
+            if (val % i == 0) {
+                return false;
+            }
+            i++;
+        }
+        return true;
+    }
+
+    /**
+     * [1,2,3] -> [2,3,1] , k = 2
+     * Reverse the array and then reverse the sub array {0, k-1} and the
+     * sub array {k, length-1} separately.
+     * [1,2,3] -> [3,2,  ,1] -> [2,3,1]
+     *
+     * O(n) Since we are only reverse the array 3 times.
+     */
+    public static void rotate(int[] nums, int k) {
+        System.out.println(Arrays.toString(nums));
+        reverse(nums, 0, nums.length);
+        System.out.println(Arrays.toString(nums));
+        reverse(nums, 0, k);
+        System.out.println(Arrays.toString(nums));
+        reverse(nums, k, nums.length);
+        System.out.println(Arrays.toString(nums));
+    }
+
+    public static void reverse(int[] nums, int start, int end) {
+        int i = start;
+        int j = 0;
+        while (j < ((end - start) / 2)) {
+            int temp = nums[i];
+            nums[i] = nums[end - j - 1];
+            nums[end - j - 1] = temp;
+            j++;
+            i++;
+        }
+    }
+
+    /**
+     * O(nlogn) Using a custom comparator, we can sort with the order that we wish to use.
+     * If we add the two string a+b and b+a like so, then we compare the two strings to see which one is larger.
+     * We avoid having to iterate through each of the characters to check which digit is larger than the other.
+     *
+     * Dummy comparator:
+     *      Largest first digit num is first.
+     *      If there are matching first digits,
+     *          then we compare the second digits and larger second digit goes first.
+     *      If one has second digit but the other doesn't,
+     *          we compare the second digit to first/prev digit and larger from that comparison goes first.
+     */
+    public static String largestNumber(Integer[] nums) {
+        Arrays.sort(nums, (a, b) -> {
+            String order1 = a + String.valueOf(b);
+            String order2 = b + String.valueOf(a);
+            return order2.compareTo(order1);
+        });
+//        Arrays.sort(nums, (a, b) -> {
+//            String aString = String.valueOf(a);
+//            String bString = String.valueOf(b);
+//            if (aString.equals(bString)) {
+//                return 0;
+//            }
+//
+//            String minString, maxString;
+//            if (aString.length() > bString.length()) {
+//                minString = bString;
+//                maxString = aString;
+//            } else {
+//                minString = aString;
+//                maxString = bString;
+//            }
+//
+//            int j = 0;
+//            for (int i = 0; i < maxString.length(); i++) {
+//                if (maxString.charAt(i) > minString.charAt(j)) {
+//                    return maxString.equals(aString) ? -1 : 1;
+//                } else if (minString.charAt(j) > maxString.charAt(i)) {
+//                    return minString.equals(bString) ? 1 : -1;
+//                }
+//
+//                j++;
+//                if (j >= minString.length()) {
+//                    j = 0;
+//                }
+//            }
+//            return 0;
+//        });
+
+        StringBuilder stringBuilder = new StringBuilder();
+        Arrays.stream(nums).sequential().forEach(stringBuilder::append);
+        return stringBuilder.toString();
+    }
+
+    /**
+     * Testing higher order function and being able to understand how to manipulate the input
+     * of the returned higher order function.
+     * In this example, `cons()` returns a function, `pair()`, that takes in a function with two arguments.
+     */
+    public static <T,U,R> Function<BiFunction<T,U,R>,R> cons(T a, U b) {
+        Function<BiFunction<T,U,R>,R> pair = f -> f.apply(a,b);
+        return pair;
+    }
+
+    public static <T,U> T car(Function<BiFunction<T,U,T>,T> cons) {
+        return cons.apply((a,b) -> a);
+    }
+
+    public static <T,U> U cdr(Function<BiFunction<T,U,U>,U> cons) {
+        return cons.apply((a,b) -> b);
+    }
+
+    /**
+     * Find the smallest positive missing number in an array that contains all positive integers.
+     * O(n) time and O(1) space, we need to understand that our solution will be between 1 and length of array + 1.
+     *      Because the smallest positive numbers start at 1 and goes up and if all the values in array are sorted
+     *      and consecutive starting at 1 then our solution should be 1 plus the size of array.
+     */
+    public static int firstMissingPositive(int[] arr, int size) {
+        // [3, 4, 1, 1]  ->  [3, 4, -1, 1]  ->  [3, 4, -1, -1]  ->  [-3, 4, -1, -1]
+        // After each iteration and since our solution should be between 1-5, we have found
+        // that the index has the correct value and is not the solution. At the end of the loop,
+        // we know that all the indexes (possible solutions) are either the correct value or isn't.
+        // Since the value 2 (index 2) wasn't in the array, that's our solution. We use the values
+        // within the array to check if it's a possible solution (between 1 and array.length) and only
+        // then we set the index of that value as a negative number.
+        for (int i = 0; i < size; i++) {
+            int x = Math.abs(arr[i]);
+            if (x - 1 < size && arr[x - 1] > 0) {
+                arr[x - 1] = -arr[x - 1];
+            }
+        }
+
+        for (int i = 0; i < size; i++) {
+            if (arr[i] > 0) {
+                return i + 1;
+            }
+        }
+        return size + 1;
+    }
+
+    /**
+     * O(logn) We are multiplying denominator by 5 each time till it is less than n.
+     *
+     * Pattern is that for every 5 numbers, we add a trailing zero.
+     * Also, for every multiple of 5, there is an extra 5, which will add to a trailing zero.
+     */
+    public static int trailingZeroes(int n) {
+        int fives=0;
+        int den=5;
+        while(den <= n)
+        {
+            fives += n/den;
+            den *= 5;
+        }
+        return fives;
+    }
+
+    public static double factorial(int n) {
+        if (n == 0 || n == 1) {
+            return 1;
+        }
+        return n * factorial(n-1);
+    }
+
+    /**
+     * Product of all values in array except for the value at the index.
+     * O(2n) -> O(n) We can use division or see how many times we need to subtract to get the sum to zero.
+     *
+     * [3, 2, 1] -> [2, 3, 6]
+     * 6 ? x = 2 => 6 / 3 = 2 => 6 - 3 - 3 = 0 // 2 3s
+     * 6 / 2 = 3 => 6 - 2 - 2 -2 = 0 // 3 2s
+     * 6 / 6 = 1 => 6 - 6 = 0 // 1 6s
+     */
+    public static int[] productExceptIndex(int[] values) {
+        int productSum = 1;
+        for (int val : values) {
+            productSum = productSum * val;
+        }
+
+        for (int i = 0; i < values.length; i++) {
+            // values[i] = productSum / values[i];
+            int j = 0;
+            int currentSum = productSum;
+            while (currentSum > 0) {
+                currentSum -= values[i];
+                j++;
+            }
+            values[i] = j;
+        }
+        return values;
+    }
+
+    /**
+     * Example: 1 / 3 = 0.33333
+     * Result: "0" + "." + "(3)"
+     *
+     * Try to think about how we do long division by hand.
+     * To figure out repeating remainder, we check to see if we can find any remainders that happened before.
+     * If so, that means we will get the same result as when that remainder was computed. We store the index when that
+     * first remainder was found so we can do the following to generate the result.
+     *
+     *      result.substring(0, indexOfRemainder) + "(" + result.substring(indexOfRemainder, result.length()) + ")"
+     */
+    public static String calculateFraction(int num, int den) {
+        StringBuilder result = new StringBuilder();
+        if ((num < 0) ^ (den < 0)) {
+            result.append("-"); // check -ve sign
+        }
+        num = Math.abs(num);
+        den = Math.abs(den);
+        long quo = num / den; // Quotient
+        long rem = num % den * 10; // calculating remainder
+
+        result.append(quo);
+        if (rem == 0) {
+            return result.toString();
+        }
+        result.append(".");
+
+        Map<Long, Integer> m = new HashMap<>();
+        while (rem != 0) {
+            if (m.containsKey(rem)) {
+                int index = m.get(rem);
+                String part1 = result.substring(0, index);
+                String part2 = "(" + result.substring(index, result.length()) + ")";
+                return part1 + part2;
+            }
+
+            m.put(rem, result.length());
+            quo = rem / den;
+            result.append(quo);
+            rem = (rem % den) * 10;
+        }
+        return result.toString();
+    }
+
+    /**
+     * Find any peaks within the array. [1,2,1,3,5,6,4], return indexes of 2 or 6.
+     * O(logn) Binary search on one side of the array, which is determined by whether left and right of mid
+     * is in ascending or descending order.
+     */
+    public static int findPeakElement(int[] nums) {
+        // We need to find a point where i-1 < i && i+1 < i
+        return findPeak(nums, 0, nums.length-1);
+    }
+
+    public static int findPeak(int[] nums, int start, int end) {
+        if (start >= end) {
+            return start;
+        }
+        int mid = start + ((end-start) / 2);
+        if (nums[mid-1] < nums[mid] && nums[mid+1] < nums[mid]) {
+            return mid;
+        }
+
+        if (nums[mid-1] < nums[mid] && nums[mid] < nums[mid+1]) {
+            return findPeak(nums, mid+1, end);
+        } else {
+            return findPeak(nums, start, mid-1);
+        }
+    }
+
+    /**
+     * Find the max product of consecutive sub array.
+     * O(n) Iterate through list once and keep track of max, positive result, and all results, which could be negative.
+     * We disgard all results if it's a negative value and use the positive result.
+     */
+    public static int maxProduct(int[] nums) {
+        // Simple example [-2,0,-1]  Output = 0
+        // Special values are 0 and odd negatives
+        // Store 2 results, one that gets set to 0 once we reach 0.
+        //      Other we continue to add but don't use if it's negative.
+
+        int maxResult = 0; //
+        int positiveResult = 1; //
+        int allResult = 1; // -1
+        for (int i = 0; i < nums.length; i++) {
+            if (nums[i] == 0) {
+                if (positiveResult != 1 && positiveResult > maxResult) {
+                    maxResult = positiveResult;
+                }
+                if (allResult != 1 && allResult > maxResult) {
+                    maxResult = allResult;
+                }
+                positiveResult = 1;
+                allResult = 1;
+            } else if (nums[i] < 0) {
+                if (positiveResult != 1 && positiveResult > maxResult) {
+                    maxResult = positiveResult;
+                }
+
+                allResult = allResult * nums[i];
+                positiveResult = 1;
+            } else {
+                allResult = allResult * nums[i];
+                positiveResult = positiveResult * nums[i];
+            }
+        }
+
+        if (positiveResult != 1 && positiveResult > maxResult) {
+            maxResult = positiveResult;
+        }
+        if (allResult != 1 && allResult > maxResult) {
+            maxResult = allResult;
+        }
+        return maxResult;
+    }
+
+    /**
+     * Given ["4","13","5","/","+"], compute the result.
+     * O(n) but it's too complex and not easy to read. We are using recursive and passing back many results.
+     * Cleaner solution given in evalRPN2(), it uses Stack to store the left and right values and polls them
+     * when we iterate and find an operator.
+     */
+    public static int evalRPN(String[] tokens) {
+        // Recursion and set left value
+        // Check if next is right value depending on if exp shows up
+
+        Set<String> exps = new HashSet<>();
+        exps.add("+");
+        exps.add("-");
+        exps.add("*");
+        exps.add("/");
+
+        String[] values = evalRPN(tokens, exps, 0);
+        return Integer.parseInt(values[1]);
+    }
+
+    public static String[] evalRPN(String[] tokens, Set<String> exps, int start) {
+        int result = Integer.parseInt(tokens[start]);
+        int i = start+1;
+        while (i < tokens.length) {
+            if (!exps.contains(tokens[i]) && exps.contains(tokens[i+1])) {
+                int rightVal = Integer.parseInt(tokens[i]);
+                String operator = tokens[i+1];
+
+                result = compute(result, operator, rightVal);
+                i += 2;
+            } else if (!exps.contains(tokens[i]) && !exps.contains(tokens[i+1])) {
+                String[] values = evalRPN(tokens, exps, i);
+                result = compute(result, values[2], Integer.parseInt(values[1]));
+                i = Integer.parseInt(values[0]) + 1;
+            } else {
+                break;
+            }
+        }
+        return new String[] {String.valueOf(i), String.valueOf(result), (i < tokens.length) ? tokens[i] : null};
+    }
+
+    public static int evalRPN2(String[] tokens) {
+        String operators = "+-*/";
+        Stack<Integer> stack = new Stack<>();
+        stack.add(0);
+
+        for (int i = 0; i < tokens.length; i++) {
+            if (tokens[i].length() > 1 || operators.indexOf(tokens[i].charAt(0)) == -1) {
+                stack.add(Integer.parseInt(tokens[i]));
+            } else {
+                int right = stack.pop();
+                int left = stack.pop();
+                int result = compute(left, tokens[i], right);
+                stack.add(result);
+            }
+        }
+        return stack.pop();
+    }
+
+    public static int compute(int left, String operator, int right) {
+        switch (operator) {
+            case "*": return left * right;
+            case "/": return left / right;
+            case "-": return left - right;
+            default: return left + right;
+        }
+    }
+
+    /**
+     * O(nlogn) with O(1) space complexity: Implement Merge Sort
+     * 1. Linear time (n) to find the middle point in ListNode. Using two pointers with one pointer going twice as fast.
+     * 2. Merge two sorted lists in (logn). Since they are sorted, we just compare one node at a time.
+     */
+    public static ListNode sortList(ListNode head) {
+        // Merge sort implementation since we are combining two sorted lists together
+        // we don't need to just around and can just continue by using ListNode.next
+
+        if (head == null || head.next == null) {
+            return head;
+        }
+
+        ListNode halfPoint = getMiddleOfListNode(head);
+        ListNode secondHalf = halfPoint.next;
+        halfPoint.next = null;
+
+        head = sortList(head);
+        secondHalf = sortList(secondHalf);
+
+        return merge(head, secondHalf);
+    }
+
+    /**
+     * O(n) Get the middle of a linked list by iterating through the list with two pointers. One pointer moving twice as fast,
+     * so when the faster pointer reaches the end, the other pointer will be at half point.
+     */
+    public static ListNode getMiddleOfListNode(ListNode head) {
+        ListNode p1 = head;
+        ListNode p2 = head;
+        while(p1!=null && p2!=null) {
+            if(p2.next==null||p2.next.next==null) {
+                return p1;
+            }
+
+            p1 = p1.next;
+            p2 = p2.next.next;
+        }
+        return head;
+    }
+
+    /**
+     * O(n*2^n) Assuming 2^n is the time complexity of the DFS (recursive call).
+     */
+    public static boolean wordBreak(String s, List<String> wordDict) {
+        // Simpler Example: "tom" ["t", "o", "m"]
+        // Make wordDict a Set
+        // t       to       tom
+        // o       m
+        // m
+
+        // Base case is if the currentLength == s.length()
+        // Only add to currentList is word exists in wordDict
+        // Backtrack if word doesn't exists
+
+        Set<String> wordDictSet = new HashSet<>(wordDict);
+        return wordBreakUtil(s, wordDictSet, 0, new ArrayList<>());
+    }
+
+    public static boolean wordBreakUtil(String s, Set<String> wordDictSet, int currentLength, List<String> results) {
+        if (currentLength == s.length()) {
+            return true;
+        }
+
+        for (int i = currentLength; i < s.length(); i++) {
+            String testString = s.substring(currentLength, i+1);
+            if (wordDictSet.contains(testString)) {
+                results.add(testString);
+                if (wordBreakUtil(s, wordDictSet, i+1, results)) {
+                    return true;
+                }
+                results.remove(results.size()-1);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * O(n) This works if we just need to return the index of the random pointer.
+     *  If we need to return the actual node from the random pointer, we would have O(n^2) since we would have
+     *  to iterate to find the node from the random pointer.
+     *
+     * Optimal time complexity solution O(n) with O(1) space complexity:
+     *  1. Add copy of each node in between current and next node, until the Nth node and add copy after that.
+     *  2. Copying nodes' random pointer is determined as so, copy.random = current.random.next;
+     *          This works because next are just copies of the current node.
+     *  3. Separate the two linked nodes and return the copy.
+     */
+    public static TreeNode copyRandomList(TreeNode head) {
+        TreeNode current = head;
+        while (current != null) {
+            TreeNode copy = new TreeNode(current.val);
+            copy.next = current.next;
+            current.next = copy;
+            current = copy.next;
+        }
+
+        TreeNode copyHead = head.next;
+        TreeNode copyCurrent = copyHead;
+        current = head;
+        while (current.next != null) {
+            copyCurrent.random = (current.random == null) ? null : current.random.next;
+            current = current.next.next;
+            copyCurrent.next = copyCurrent.next.next;
+            copyCurrent = copyCurrent.next;
+        }
+        return copyHead;
+    }
+
+    /**
+     * O(n) We iterate through the circuit once and store the gas-needed, if we run into stops where
+     * gasInTank + gas at current stop < cost at current stop (cost to get to next stop).
+     * If gasInTank + gas at current stop >= cost at current stop, then we just add to gasInTank.
+     *
+     * Finally, we check to see if gasInTank + gas-needed is zero or greater.
+     */
+    public static int canCompleteCircuit(int[] gas, int[] cost) {
+        int startPointIdx = 0;
+        int additionalGasNeeded = 0;
+        int gasInTank = 0;
+        for (int i = 0; i < gas.length; i++) {
+            gasInTank = gasInTank + gas[i] - cost[i];
+            if (gasInTank < 0) {
+                additionalGasNeeded = additionalGasNeeded + gasInTank;
+                gasInTank = 0;
+                startPointIdx = i + 1;
+            }
+        }
+        if (gasInTank + additionalGasNeeded >= 0) {
+            return startPointIdx;
+        } else {
+            return -1;
+        }
     }
 
     /**
@@ -319,26 +913,6 @@ public class CodingProblems {
     }
 
     /**
-     * O(n) we need to keep track of the min and max at each node.
-     *      since we could get into tree structure where the immediate child are less than root but
-     *      the child's child has a value greater than the root.
-     */
-    public static boolean isValidBST(TreeNode root) {
-        return isValidBST(root, Integer.MIN_VALUE, Integer.MAX_VALUE);
-    }
-
-    public static boolean isValidBST(TreeNode root, int min, int max) {
-        if (root == null) {
-            return true;
-        }
-        if (root.val <= min && root.val >= max) {
-            return false;
-        }
-
-        return isValidBST(root.left, min, root.val) && isValidBST(root.right, root.val, max);
-    }
-
-    /**
      * O(n*m) where n is the length of weights and m is the maxWeight.
      *
      * If j_value (weight of the current item) > j
@@ -366,13 +940,15 @@ public class CodingProblems {
     }
 
     /**
-     * O(n) Dynamic programming solution.
-     * dp[n] = dp[n-1] + dp[n-2] , where dp[0] = 1 and dp[1] = 1 or 0 depending on if the char is 0.
+     * Given an encoded message, find number of ways to decode the message.
+     * Message is encoded as "a = 1, b = 2, ... z = 26"
      *
+     * O(n) Dynamic programming solution.
+     *      dp[n] = dp[n-1] + dp[n-2] , where dp[0] = 1 and dp[1] = 1 or 0 depending on if the char is 0.
      * A problem is a dynamic programming problem if it satisfies two conditions:
-     * 1. The problem can be divided into sub problems, and its optimal solution can be constructed from optimal
+     * 1. The problem can be divided into sub-problems, and its optimal solution can be constructed from optimal
      *      solutions of the sub problems. In academic terms, this is called optimal substructure.
-     * 2. The sub problems from 1) overlap and results of the sub problems can be cached and reused.
+     * 2. The sub-problems from 1) overlap and results of the sub problems can be cached and reused.
      */
     public static int numDecodings(String s) {
         if (s == null || s.length() == 0) {
@@ -794,6 +1370,7 @@ public class CodingProblems {
         }
         return result;
     }
+
     /**
      * O(nklogk), where n is the length of strs, and k is the maximum length of a string in strs.
      * The outer loop has complexity O(n) as we iterate through each string.
@@ -872,51 +1449,6 @@ public class CodingProblems {
     }
 
     /**
-     * O(n^n) We need to understand how to structure the tree that helps with our backtracking
-     * solution. Children of each node are the possible subsets without including the node itself
-     * So first nodes are 0, 00, 001, 0012
-     * Then 0 -> 0, 01, 012, which are all the possible subsets without including the node itself
-     */
-    public static boolean splitString(String s) {
-        // 0012
-        //          0                   00              001               0012
-        //    0     01    012          1  12             2
-        //  1 12    2                 2
-        // 2
-
-        //[0, 0, 1, 2] [0, 0, 12] [0, 01, 2] [0, 012] [00, 1, 2]  [00, 12] [001, 2]
-        return dfs(s, 0, new LinkedList<>());
-    }
-
-    public static boolean dfs(String s, int substringIndex, List<Integer> currentSubsets) {
-        if (substringIndex >= s.length() && currentSubsets.size() > 1 && isDescending(currentSubsets)) {
-            return true;
-        }
-
-        for (int i = substringIndex; i < s.length(); i++) {
-            String currentString = s.substring(substringIndex, i+1);
-            int currentValue = Integer.parseInt(currentString);
-            currentSubsets.add(currentValue);
-            if (dfs(s, i+1, currentSubsets)) {
-                return true;
-            }
-            currentSubsets.remove(currentSubsets.size()-1);
-        }
-        return false;
-    }
-
-    public static boolean isDescending(List<Integer> currentResult) {
-        Integer prevNum = currentResult.get(0);
-        for (int i = 1; i < currentResult.size(); i++) {
-            if (prevNum != (currentResult.get(i) + 1)) {
-                return false;
-            }
-            prevNum = currentResult.get(i);
-        }
-        return true;
-    }
-
-    /**
      * O(n*4^n) since 4 is max number of letters at a given digit. So, we can have 4 different tracks
      * for each digit in digits with length n. Keeping an index and incrementing the chars in digits during
      * a DFS() saves us from creating another for-loop.
@@ -971,7 +1503,7 @@ public class CodingProblems {
 
     public static void dfs(String s, List<List<String>> result, int start, List<String> currentList) {
         // if index reach the max size of string then we have reached the leaf of the tree.
-        if (start >= s.length()) {
+        if (start == s.length()) {
             result.add(new ArrayList<>(currentList));
             return;
         }
@@ -1224,7 +1756,7 @@ public class CodingProblems {
      */
     public static List<String> topKFrequent(String[] words, int k) {
         Arrays.sort(words);
-        PriorityQueue<String[]> frequencyQueue = new PriorityQueue<>((a,b)
+        PriorityQueue<String[]> frequencyQueue = new PriorityQueue<>((a, b)
                 -> Integer.compare(Integer.parseInt(b[1]), Integer.parseInt(a[1])));
 
         String prevWord = null;
@@ -2112,16 +2644,43 @@ public class CodingProblems {
     public static class TreeNode {
 //        TreeNode root = new TreeNode(3, new TreeNode(9), new TreeNode(20, new TreeNode(15), new TreeNode(7)));
         int val;
+
+        String valString;
         TreeNode left;
         TreeNode right;
         TreeNode next;
 
+        TreeNode random;
+
+        Integer randomIndex;
+
         TreeNode() {}
         TreeNode(int val) { this.val = val; }
-        TreeNode(int val, TreeNode left, TreeNode right) {
+
+        TreeNode(int val, TreeNode next, Integer random) {
             this.val = val;
+            this.next = next;
+            this.randomIndex = random;
+        }
+
+        TreeNode(String valString, TreeNode left, TreeNode right) {
+            this.valString = valString;
             this.left = left;
             this.right = right;
+        }
+
+        TreeNode(int val, TreeNode next, TreeNode random) {
+            this.val = val;
+            this.next = next;
+            this.random = random;
+        }
+
+        TreeNode(int val, TreeNode next, TreeNode left, TreeNode right, TreeNode random) {
+            this.val = val;
+            this.next = next;
+            this.left = left;
+            this.right = right;
+            this.random = random;
         }
     }
 
