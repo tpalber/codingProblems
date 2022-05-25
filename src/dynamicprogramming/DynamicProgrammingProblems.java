@@ -167,4 +167,32 @@ public class DynamicProgrammingProblems {
         cache.put(key, downResult+rightResult);
         return downResult+rightResult;
     }
+
+    /**
+     * Find the min cost of painting houses with no adjacent houses having the same paint. We can use the cache
+     * to improve our performance by eliminating overlapping calls.
+     * Time O(n^m) non optimal solution
+     * Time O(n*m) solution with memoization since we only run the method once for each house and paint combo.
+     * Space O(n*m), we need to store results from each sub-problem.
+     */
+    public static Integer minCostToPaint(int[][] matrix, Integer paintIndex, Integer houseIndex, Map<String, Integer> cache) {
+        if (cache.containsKey(houseIndex + "," + paintIndex)) {
+            return cache.get(houseIndex + "," + paintIndex);
+        }
+
+        if (houseIndex >= matrix.length) {
+            return 0;
+        }
+        int minCost = Integer.MAX_VALUE;
+        for (int i = 0; i < matrix[houseIndex].length; i++) {
+            if (paintIndex != null && paintIndex == i) {
+                continue;
+            }
+
+            Integer costWithEachPaint = minCostToPaint(matrix, i, houseIndex+1, cache);
+            minCost = Math.min(minCost, costWithEachPaint + matrix[houseIndex][i]);
+        }
+        cache.put(houseIndex + "," + paintIndex, minCost);
+        return minCost;
+    }
 }

@@ -4,6 +4,12 @@ import java.util.*;
 public class CheatSheetProblems {
 
     /**
+     * Java min and max heap implementation.
+     */
+    PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+    PriorityQueue<Integer> maxHeap = new PriorityQueue<>(Comparator.reverseOrder());
+
+    /**
      * Traversing a LinkedNode using iterative and recursive call.
      * Use pointer manipulation when necessary, like to reverse a LinkedNode.
      * Time O(n) & Space O(1)
@@ -39,7 +45,8 @@ public class CheatSheetProblems {
     /**
      * Traversing a Tree using BFS and DFS. We are using BinaryTree here, so there is only
      * left and right child. If we are using tree with many children, we can just iterate through
-     * the children by making the DFS call or add it to the Queue.
+     * the children by making the DFS call or add it to the Queue. Look at using BFS for finding min
+     * distance from the root or starting point.
      *
      * Many problems include traversing the tree and doing something with the value. Like the
      * max tree path sum, to return the max sum from root to a leaf.
@@ -83,13 +90,15 @@ public class CheatSheetProblems {
     /**
      * For graph problems, we first need to create an adjacent Map. For each node, what are all
      * of its pointed nodes. Once we have that, we can iterate through the graph if we are given
-     * the head, otherwise we iterate through each of the keys in the adjacent Map.
+     * the head, otherwise we iterate through each of the keys in the adjacent Map. Look at using BFS
+     * for finding min distance from the root or starting point.
+     *
      * We need to also take care of scenarios where we have connected graphs. That should be considered
      * in our base case like in the largestComponent() problem.
      * Time O(e) where e is number of edges. Count of input relationships.
      * Space O(n) where n is the largest number of adjacent node for one node.
      *
-     * Some Matrix problems can also be solved using tree structure, where at each position, we
+     * Some Matrix problems, we can also be solved using tree structure, where at each position, we
      * have limited number of paths to take (left, right, up, down). We should also track our visited
      * positions, so we don't visit them again. We can usually save space by updating the existing matrix.
      * Otherwise, create a new boolean[][].
@@ -145,6 +154,30 @@ public class CheatSheetProblems {
             count += componentCount(graph, visited, node);
         }
         return count;
+    }
+
+    /**
+     * Dynamic programming problems are similar to graph and matrix problems, except we need to check for
+     * overlapping solutions. If we are making the same exact recursive call multiple times, we can cache
+     * those results and return it.
+     * Grid traveler is a good example of not making the recursive call again for a position within a matrix.
+     */
+    public int gridTraveler(int m, int n, Map<String, Integer> cache) {
+        if (m == 0 || n == 0) {
+            return 0;
+        }
+        if (m == 1 || n == 1) {
+            return 1;
+        }
+        String key = m + "," + n;
+        if (cache.containsKey(key)) {
+            return cache.get(key);
+        }
+
+        int downResult = gridTraveler(m-1, n, cache);
+        int rightResult = gridTraveler(m, n-1, cache);
+        cache.put(key, downResult+rightResult);
+        return downResult+rightResult;
     }
 
     /**
